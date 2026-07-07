@@ -36,15 +36,26 @@ namespace WindowsFormsApp1
             timer.Start();
 
             var player = new Player(_scene, Color.Green, new Vector2(32, 32), new Vector2(32, 32), new Vector2(this.ClientRectangle.Width / 2 - 16, this.ClientRectangle.Height / 2 + 16));
-            
-            var wall_1 = new Wall(_scene, Color.Gray, new Vector2(800, 32), new Vector2(800, 32), new Vector2(this.ClientRectangle.Width / 2 - 400, this.ClientRectangle.Height / 2 + 48));
-            var wall_2 = new Wall(_scene, Color.Gray, new Vector2(200, 32), new Vector2(200, 32), new Vector2(this.ClientRectangle.Width + 100, this.ClientRectangle.Height / 2 + 60));
-            var wall_3 = new Wall(_scene, Color.Gray, new Vector2(32, 300), new Vector2(32, 300), new Vector2(this.ClientRectangle.X - 25, this.ClientRectangle.Y - 25));
+
+            var tileMap = new TileMap();
+
+            for (int i = 0; i < tileMap.Tiles.GetLength(0); i++)
+            {
+                for (int j = 0; j < tileMap.Tiles.GetLength(1); j++)
+                {
+                    if (tileMap.Tiles[i,j] == 1) 
+                    {
+                        var wall = new Wall(_scene, Color.Gray,
+                        new Vector2(tileMap.TileSize.X, tileMap.TileSize.Y),
+                        new Vector2(tileMap.TileSize.X, tileMap.TileSize.Y),
+                        new Vector2((j + 1) * tileMap.TileSize.X, (i + 1) * tileMap.TileSize.Y));
+
+                        _scene.AddObject(wall);
+                    }
+                }
+            }
 
             _scene.AddObject(player);
-            _scene.AddObject(wall_1);
-            _scene.AddObject(wall_2);
-            _scene.AddObject(wall_3);
 
             _scene.MainCamera.AllowFollow = true;
             _scene.MainCamera.Target = player;
@@ -57,7 +68,7 @@ namespace WindowsFormsApp1
             DateTime now = DateTime.Now;
 
             if (lastTime.HasValue)
-                delta = (float)(now - lastTime.Value).TotalMilliseconds;
+                delta = (float)(now - lastTime.Value).TotalSeconds;
 
             lastTime = now;
 
@@ -83,7 +94,7 @@ namespace WindowsFormsApp1
         public Keys Down = Keys.S;
         public Keys Right = Keys.D;
 
-        private float _speed = 6f;
+        private float _speed = 200f;
 
         public Player(Scene scene, Color color, Vector2 size, Vector2 collisionSize, Vector2 position) 
             : base(scene, color, size, collisionSize, position) 
@@ -93,7 +104,7 @@ namespace WindowsFormsApp1
         public override void Update(float delta)
         {
             Vector2 moviment = Input.GetVector(Left, Right, Up, Down);
-            moviment *= _speed;
+            moviment *= _speed * delta;
 
             MoveAndCollide(moviment);
         }
@@ -462,5 +473,17 @@ namespace WindowsFormsApp1
                 }
             }
         }
+    }
+
+    public class TileMap 
+    {
+        public Vector2 TileSize = new Vector2(32, 32);
+        public int[,] Tiles =
+        {
+            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+            {1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1}
+        };
     }
 }
