@@ -1,6 +1,8 @@
-﻿using System;
+﻿using physics.Engine.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Numerics;
 using System.Windows.Forms;
@@ -11,10 +13,23 @@ namespace WindowsFormsApp1
     {
         private Scene _scene = new Scene();
         private DateTime? lastTime;
+        private Graphics gfxBuffer;
+        private Bitmap bmpBuffer;
+        private readonly FastLoop _fastLoop;
         public Form1()
         {
             InitializeComponent();
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+
+            bmpBuffer = new Bitmap(Size.Width, Size.Height);
+            gfxBuffer = Graphics.FromImage(bmpBuffer);
+
+            gfxBuffer.CompositingMode = CompositingMode.SourceOver;
+            gfxBuffer.CompositingQuality = CompositingQuality.HighSpeed;
+            gfxBuffer.InterpolationMode = InterpolationMode.NearestNeighbor;
+            gfxBuffer.PixelOffsetMode = PixelOffsetMode.Half;
+            gfxBuffer.SmoothingMode = SmoothingMode.HighSpeed;
+
             this.KeyPreview = true;
             this.BackColor = Color.SkyBlue;
 
@@ -24,11 +39,6 @@ namespace WindowsFormsApp1
 
             this.KeyDown += (s, e) => _scene.Input.PressedKeys.Add(e.KeyCode);
             this.KeyUp += (s, e) => _scene.Input.PressedKeys.Remove(e.KeyCode);
-
-            Timer timer = new Timer();
-            timer.Interval = 1000 / 60;
-            timer.Tick += UpdateGeral;
-            timer.Start();
 
             var tileMap = new TileMap();
 
@@ -85,9 +95,19 @@ namespace WindowsFormsApp1
                     }
                 }
             }
+
+
+            _fastLoop = new FastLoop(GameLoop);
         }
 
-        private void UpdateGeral(object sender, EventArgs e)
+        private void GameLoop(double elapsedTime)
+        {
+
+            UpdateGeral();
+            this.Invalidate();
+        }
+
+        private void UpdateGeral()
         {
             DebugStats.FPS++;
             float delta = 1;
@@ -133,8 +153,6 @@ namespace WindowsFormsApp1
 
             _scene.MainCamera.Update(delta);
 
-            this.Invalidate();
-
             if (!DebugStats.InitFpsMetter.HasValue)
                 DebugStats.InitFpsMetter = DateTime.Now;
 
@@ -162,7 +180,8 @@ namespace WindowsFormsApp1
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            _scene.Draw(e.Graphics);
+            _scene.Draw(gfxBuffer);
+            e.Graphics.DrawImage(bmpBuffer, new Point(0, 0));
         }
     }
 
@@ -389,6 +408,10 @@ namespace WindowsFormsApp1
 
         public void Draw(Graphics g)
         {
+
+            // Clear to BG Color
+            g.Clear(Color.SkyBlue);
+
             Render.Draw(g, MainCamera, GetObjects());
 
             if (!DebugStats.ShowDebug) return;
